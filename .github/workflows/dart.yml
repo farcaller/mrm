@@ -7,7 +7,18 @@ on:
     branches: [ "master" ]
 
 jobs:
+  create_tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "latest"
+          message: "Latest release"
+          force_push_tag: true
+
   create_release:
+    needs: create_tag
     name: Create Release
     runs-on: ubuntu-latest
     steps:
@@ -15,6 +26,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: latest
           name: ${{ github.ref_name }}
           draft: false
           prerelease: true
@@ -74,5 +86,5 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ needs.create_release.outputs.tag-name }}
+          tag_name: latest
           files: bin/mrm${{ matrix.release_suffix }}
