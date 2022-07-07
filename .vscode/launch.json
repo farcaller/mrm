@@ -8,22 +8,36 @@
       "name": "sync test",
       "request": "launch",
       "type": "dart",
-      "program": "bin/mucklet_roomer.dart",
+      "program": "bin/mrm.dart",
       "args": ["sync-room", "-s", "./data/test.yaml", "-r", "entrance"]
     },
     {
       "name": "lint test",
       "request": "launch",
       "type": "dart",
-      "program": "bin/mucklet_roomer.dart",
+      "program": "bin/mrm.dart",
       "args": ["lint", "-s", "./data/test.yaml"]
     },
     {
       "name": "APPLY PROD",
       "request": "launch",
       "type": "dart",
-      "program": "bin/mucklet_roomer.dart",
+      "program": "bin/mrm.dart",
       "args": ["sync-shard", "-s", "./data/chateau.yaml", "--apply"]
+    },
+    {
+      "name": "lint prod",
+      "request": "launch",
+      "type": "dart",
+      "program": "bin/mrm.dart",
+      "args": ["lint", "-s", "./data/chateau.yaml"]
+    },
+    {
+      "name": "sync room PROD",
+      "request": "launch",
+      "type": "dart",
+      "program": "bin/mrm.dart",
+      "args": ["sync-room", "-s", "./data/chateau.yaml", "-r", "west hallway", "--apply"]
     },
   ]
 }

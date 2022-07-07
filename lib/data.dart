@@ -30,8 +30,10 @@ class AuthInfo {
 class Shard {
   final List<Room> rooms;
   final AuthInfo authInfo;
+  final ExitMessages? defaultExitMessages;
 
-  Shard({required this.rooms, required this.authInfo});
+  Shard(
+      {required this.rooms, required this.authInfo, this.defaultExitMessages});
 
   factory Shard.fromJson(Map<String, dynamic> json) {
     var sh = _$ShardFromJson(json);
@@ -50,32 +52,41 @@ class Shard {
             var keywords = e.keywords;
             var to = e.to;
             final back = e.back;
+            bool hasCustomKeywords = keywords != null;
 
             if (back != null) {
+              // if aliased via back: add the "back" kw as the first one
               to ??= back;
               keywords = keywords == null ? ['back'] : ['back', ...keywords];
               name ??= rooms.firstWhere((r) => r.tid == back).name;
             }
-            if (to != null) {
-              keywords ??= [to];
-              try {
-                name ??= rooms.firstWhere((r) => r.tid == to).name;
-              } catch (e) {
-                logger.fatal(
-                    'cannot find room for exit $to in room ${room.name}');
-                rethrow;
-              }
-            }
+
             assert(to != null);
 
             String targetId;
             Room? targetRoom;
             if (to!.startsWith('#')) {
+              // if the target is a specific room id we're done here
               targetId = to.substring(1);
             } else {
               try {
                 targetRoom = rooms.firstWhere((r) => r.tid == to);
                 targetId = rooms.firstWhere((r) => r.tid == to).id ?? '';
+
+                // if there's no name, use the target room name
+                name ??= targetRoom.name;
+
+                // if there are no kws, use the default; the "back" still goes first
+                if (!hasCustomKeywords && targetRoom.designatedExits != null) {
+                  if (back != null) {
+                    keywords!.insertAll(1, targetRoom.designatedExits!);
+                  } else {
+                    keywords = targetRoom.designatedExits;
+                  }
+                }
+
+                // if there are still no keywords, add the room's tid as one
+                keywords ??= [to];
               } catch (e) {
                 logger.fatal(
                     'cannot find room for exit $to in room ${room.name}');
@@ -83,20 +94,22 @@ class Shard {
               }
             }
 
+            final roomMessages = e.messages ?? defaultExitMessages!;
+
             final messages = ExitMessages(
               leave: targetRoom != null
-                  ? e.messages!.leave
+                  ? roomMessages.leave
                       .replaceAll('\$SHORT', targetRoom.exitName)
                       .replaceAll('\$NAME', targetRoom.name)
-                  : e.messages!.leave,
-              arrive: e.messages!.arrive
+                  : roomMessages.leave,
+              arrive: roomMessages.arrive
                   .replaceAll('\$SHORT', room.exitName)
                   .replaceAll('\$NAME', room.name),
               travel: targetRoom != null
-                  ? e.messages!.travel
+                  ? roomMessages.travel
                       .replaceAll('\$SHORT', targetRoom.exitName)
                       .replaceAll('\$NAME', targetRoom.name)
-                  : e.messages!.travel,
+                  : roomMessages.travel,
             );
 
             return Exit(
@@ -131,6 +144,8 @@ class Room {
   @JsonKey(readValue: _readDescription)
   final String description;
   final List<Exit> exits;
+  @JsonKey(readValue: parseMaybeList)
+  final List<String>? designatedExits;
 
   Room(
       {required this.tid,
@@ -138,13 +153,15 @@ class Room {
       required this.name,
       required this.exitName,
       required this.description,
-      required this.exits});
+      required this.exits,
+      this.designatedExits});
 
   factory Room.fromJson(Map<String, dynamic> json) => _$RoomFromJson(json);
 
   Map<String, dynamic> toJson() => _$RoomToJson(this);
 
-  static _readExitName(Map m, String k) => m[k] ?? m['name'];
+  static _readExitName(Map m, String k) =>
+      m[k] ?? (m['name'] as String).toLowerCase();
   static _readDescription(Map m, String k) => (m[k] as String).trim();
 }
 
@@ -155,7 +172,7 @@ class Exit {
   final String? back;
   final ExitMessages? messages;
 
-  @JsonKey(readValue: _readKeywords)
+  @JsonKey(readValue: parseMaybeList)
   final List<String>? keywords;
 
   @JsonKey(ignore: true)
@@ -177,8 +194,6 @@ class Exit {
   factory Exit.fromJson(Map<String, dynamic> json) => _$ExitFromJson(json);
 
   Map<String, dynamic> toJson() => _$ExitToJson(this);
-
-  static _readKeywords(Map m, String k) => m[k] is String ? [m[k]] : m[k];
 }
 
 @JsonSerializable()
@@ -207,3 +222,5 @@ Future<Shard> loadShard(String fileName) async {
   final shard = Shard.fromJson(jsonDecode(data));
   return shard;
 }
+
+parseMaybeList(Map m, String k) => m[k] is String ? [m[k]] : m[k];

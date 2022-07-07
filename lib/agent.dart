@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:glog/glog.dart';
 import 'package:mrm/res/exit.dart';
 import 'package:res_client/client.dart';
@@ -151,6 +152,7 @@ class Agent {
           dirtyRoom;
       final exitsToRemove = <ResExit>[];
       final exitsToSet = <Exit>[];
+      final processedExits = <Exit>[];
       final matchedExits = [...targetRoom.exits];
       for (final resExitEntries in resRoom.exits.asMap().entries) {
         final resExit = resExitEntries.value;
@@ -164,16 +166,30 @@ class Agent {
         } else {
           final exit = matchedExits.removeAt(exitIdx);
           exit.exitId = resExit.exit.rid.split('.').last;
-          exitsToSet.add(exit);
+          processedExits.add(exit);
+          bool dirty = false;
           await n.context('exit "${exit.name}"', () {
-            n.diff('name', resExit.name, exit.name!);
-            n.diff(
-                'position', resExitIndex.toString(), exit.exitOrder.toString());
-            n.diff('target', details.targetRoom.id, exit.targetRoomID!);
-            n.diff('leave message', details.leaveMsg, exit.messages!.leave);
-            n.diff('arrive message', details.arriveMsg, exit.messages!.arrive);
-            n.diff('travel message', details.travelMsg, exit.messages!.travel);
+            dirty = n.diff('name', resExit.name, exit.name!) || dirty;
+            dirty = n.diff('position', resExitIndex.toString(),
+                    exit.exitOrder.toString()) ||
+                dirty;
+            dirty =
+                n.diff('target', details.targetRoom.id, exit.targetRoomID!) ||
+                    dirty;
+            dirty = n.diff('exits', resExit.keys.join(', '),
+                    exit.keywords!.join(', ')) ||
+                dirty;
+            dirty = n.diff(
+                    'leave message', details.leaveMsg, exit.messages!.leave) ||
+                dirty;
+            dirty = n.diff('arrive message', details.arriveMsg,
+                    exit.messages!.arrive) ||
+                dirty;
+            dirty = n.diff('travel message', details.travelMsg,
+                    exit.messages!.travel) ||
+                dirty;
           });
+          if (dirty) exitsToSet.add(exit);
         }
       }
       for (final resExit in exitsToRemove) {
@@ -181,7 +197,7 @@ class Agent {
             () => n.cross('remove exit to #${resExit.id}'));
       }
       final exitsToAdd =
-          targetRoom.exits.where((e) => !exitsToSet.contains(e)).toList();
+          targetRoom.exits.where((e) => !processedExits.contains(e)).toList();
       for (final exit in exitsToAdd) {
         await n.context('exit "${exit.name}"',
             () => n.plus('add exit to #${exit.targetRoomID}'));
@@ -217,7 +233,8 @@ class Agent {
           // re-order after everything is settled
           final finalExits = [...exitsToAdd, ...exitsToSet];
           for (var i = 0; i < finalExits.length; i++) {
-            final exit = finalExits.firstWhere((e) => e.exitOrder == i);
+            final exit = finalExits.firstWhereOrNull((e) => e.exitOrder == i);
+            if (exit == null) continue;
             await setExitOrder(targetRoom, exit.exitId!, exit.exitOrder!);
           }
         } else {

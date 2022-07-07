@@ -107,7 +107,7 @@ packages:
     source: hosted
     version: "4.1.0"
   collection:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: collection
       url: "https://pub.dartlang.org"
@@ -186,9 +186,9 @@ packages:
   glog:
     dependency: "direct main"
     description:
-      path: "../dart-glog"
-      relative: true
-    source: path
+      name: glog
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "1.1.0"
   graphs:
     dependency: transitive
@@ -340,10 +340,10 @@ packages:
   res_client:
     dependency: "direct main"
     description:
-      path: "../resclient-dart"
-      relative: true
-    source: path
-    version: "0.8.1"
+      name: res_client
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.8.2"
   shelf:
     dependency: transitive
     description:

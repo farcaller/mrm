@@ -25,11 +25,16 @@ Shard _$ShardFromJson(Map<String, dynamic> json) => Shard(
           .map((e) => Room.fromJson(e as Map<String, dynamic>))
           .toList(),
       authInfo: AuthInfo.fromJson(json['authInfo'] as Map<String, dynamic>),
+      defaultExitMessages: json['defaultExitMessages'] == null
+          ? null
+          : ExitMessages.fromJson(
+              json['defaultExitMessages'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$ShardToJson(Shard instance) => <String, dynamic>{
       'rooms': instance.rooms,
       'authInfo': instance.authInfo,
+      'defaultExitMessages': instance.defaultExitMessages,
     };
 
 Room _$RoomFromJson(Map<String, dynamic> json) => Room(
@@ -41,6 +46,10 @@ Room _$RoomFromJson(Map<String, dynamic> json) => Room(
       exits: (json['exits'] as List<dynamic>)
           .map((e) => Exit.fromJson(e as Map<String, dynamic>))
           .toList(),
+      designatedExits:
+          (parseMaybeList(json, 'designatedExits') as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList(),
     );
 
 Map<String, dynamic> _$RoomToJson(Room instance) => <String, dynamic>{
@@ -50,13 +59,14 @@ Map<String, dynamic> _$RoomToJson(Room instance) => <String, dynamic>{
       'exitName': instance.exitName,
       'description': instance.description,
       'exits': instance.exits,
+      'designatedExits': instance.designatedExits,
     };
 
 Exit _$ExitFromJson(Map<String, dynamic> json) => Exit(
       name: json['name'] as String?,
       to: json['to'] as String?,
       back: json['back'] as String?,
-      keywords: (Exit._readKeywords(json, 'keywords') as List<dynamic>?)
+      keywords: (parseMaybeList(json, 'keywords') as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
       messages: json['messages'] == null

@@ -11,7 +11,8 @@ class ResExit {
 
   String get id => exit['id'];
   String get name => exit['name'];
-  List<String> get keys => exit['keys'];
+  List<String> get keys =>
+      (exit['keys'] as List).map((k) => k.toString()).toList();
 
   Future<ResExitDetails> get details async {
     if (!_requestedDetails) {
