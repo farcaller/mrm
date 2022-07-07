@@ -1,0 +1,58 @@
+authInfo:
+  username: your_username  # that use use to log in
+  password: your_password  # ditto
+  characterName: Fluttery  # the character's name
+  characterSurname: Darte  # and the surname
+
+# include this if you want to have default messages for the exits
+defaultExitMessages:
+  # for leave & travel $SHORT and $NAME resolve to the destination room
+  # for arrive it's the origin room.
+  # $SHORT will be the room's `exitName` if it has one, will default to the
+  # long name otherwise.
+  leave: leaves to $SHORT.
+  travel: goes to $SHORT.
+  arrive: arrives from $NAME.
+
+rooms:
+- tid: my room  # this is your local identifier for the room. can be whatever,
+                # it's never sent to the mucklet
+  id: cb3c1cm9gbrmb43nluu0  # this is the `get room id` room id without the `#`
+  name: Room Name  # the room name
+  exitName: room  # a shorter name that can be used in the exit messages
+  description: >
+    The entrance is nice.
+  exits:
+  - to: second room   # the other room's tid. you can also use the
+                      #'#cb3c9a69gbrmb43nm53g' room ids here but they MUST have
+                      # the `#` in front and they should be within the quotes
+  - to: house
+    keywords: [can, have, keywords]   # if these aren't specified the keywords
+                                      # will be taken from the destination's
+                                      # `designatedExits`. If that's missing
+                                      # then the tid is used.
+
+- tid: second room
+  id: cb3c9a69gbrmb43nm53g
+  name: The other Room
+  exitName: house
+  designatedExits: [other, room]
+  description: >
+    the house is tall
+  exits:
+  # you can replace `to` with `back`. That designates the return exit which will
+  # automatically get the `back` keyword on it.
+  - back: my room
+
+- tid: house
+  id: cb3d5v69gbrmb43nmntg
+  name: The House.
+  description: >
+    Meh.
+  exits:
+  - back: my room
+    # you can set up custom messages per exit like this
+    messages:
+      leave: leaves.
+      travel: goes to $SHORT.
+      arrive: arrives from $NAME.
