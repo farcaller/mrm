@@ -68,9 +68,6 @@ jobs:
       #- name: Run tests
       #  run: dart test
       
-      - name: Build the app
-        run: dart compile exe bin/mrm.dart
-
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
         run: dart compile exe bin/mrm.dart -o bin/mrm-linux
