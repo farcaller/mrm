@@ -7,10 +7,11 @@ part of 'data.dart';
 // **************************************************************************
 
 AuthInfo _$AuthInfoFromJson(Map<String, dynamic> json) => AuthInfo(
-      username: json['username'] as String,
-      password: json['password'] as String,
-      characterName: json['characterName'] as String,
-      characterSurname: json['characterSurname'] as String,
+      username: json['username'] as String?,
+      password: json['password'] as String?,
+      characterName: json['characterName'] as String?,
+      characterSurname: json['characterSurname'] as String?,
+      authEnv: json['authEnv'] as String?,
     );
 
 Map<String, dynamic> _$AuthInfoToJson(AuthInfo instance) => <String, dynamic>{
@@ -18,6 +19,7 @@ Map<String, dynamic> _$AuthInfoToJson(AuthInfo instance) => <String, dynamic>{
       'password': instance.password,
       'characterName': instance.characterName,
       'characterSurname': instance.characterSurname,
+      'authEnv': instance.authEnv,
     };
 
 Shard _$ShardFromJson(Map<String, dynamic> json) => Shard(

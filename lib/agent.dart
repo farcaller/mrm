@@ -32,13 +32,13 @@ class Agent {
     logger.info('authenticating as ${shard.authInfo.username}');
     await client.auth('auth', 'login', params: {
       'name': shard.authInfo.username,
-      'hash': saltPassword(shard.authInfo.password),
+      'hash': saltPassword(shard.authInfo.password!),
     });
     logger.info('auth success');
     _player = await client.call('core', 'getPlayer') as ResModel;
     logger.info('got player $player');
-    final char = findCharacter(
-        player, shard.authInfo.characterName, shard.authInfo.characterSurname);
+    final char = findCharacter(player, shard.authInfo.characterName!,
+        shard.authInfo.characterSurname!);
     logger.info('got character $char');
     _ctrl = await controlCharacter(client, player, char);
 

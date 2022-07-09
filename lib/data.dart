@@ -9,16 +9,19 @@ part 'data.g.dart';
 
 @JsonSerializable()
 class AuthInfo {
-  final String username;
-  final String password;
-  final String characterName;
-  final String characterSurname;
+  final String? username;
+  final String? password;
+  final String? characterName;
+  final String? characterSurname;
+  final String? authEnv;
 
-  AuthInfo(
-      {required this.username,
-      required this.password,
-      required this.characterName,
-      required this.characterSurname});
+  AuthInfo({
+    this.username,
+    this.password,
+    this.characterName,
+    this.characterSurname,
+    this.authEnv,
+  });
 
   factory AuthInfo.fromJson(Map<String, dynamic> json) =>
       _$AuthInfoFromJson(json);
@@ -37,11 +40,22 @@ class Shard {
 
   factory Shard.fromJson(Map<String, dynamic> json) {
     var sh = _$ShardFromJson(json);
+    sh = sh._resolveAuth();
     sh = sh._resolveExits();
     return sh;
   }
 
   Map<String, dynamic> toJson() => _$ShardToJson(this);
+
+  Shard _resolveAuth() {
+    var ai = authInfo;
+    if (ai.authEnv != null) {
+      final authData = Platform.environment[ai.authEnv]!;
+      final authJson = jsonDecode(authData);
+      ai = AuthInfo.fromJson(authJson);
+    }
+    return Shard(rooms: rooms, authInfo: ai);
+  }
 
   Shard _resolveExits() {
     return Shard(
