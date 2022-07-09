@@ -54,7 +54,8 @@ class Shard {
       final authJson = jsonDecode(authData);
       ai = AuthInfo.fromJson(authJson);
     }
-    return Shard(rooms: rooms, authInfo: ai);
+    return Shard(
+        rooms: rooms, defaultExitMessages: defaultExitMessages, authInfo: ai);
   }
 
   Shard _resolveExits() {
@@ -108,7 +109,9 @@ class Shard {
               }
             }
 
-            final roomMessages = e.messages ?? defaultExitMessages!;
+            final roomMessages = e.messages ??
+                defaultExitMessages ??
+                ExitMessages(leave: '', arrive: '', travel: '');
 
             final messages = ExitMessages(
               leave: targetRoom != null
