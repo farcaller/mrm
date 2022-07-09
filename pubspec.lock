@@ -515,11 +515,9 @@ packages:
   yaml:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "8c270e750075968a425a55ff28a41f374d1485db"
-      url: "https://github.com/farcaller/yaml.git"
-    source: git
+      name: yaml
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "3.1.1"
   yaml_writer:
     dependency: transitive
