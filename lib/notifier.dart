@@ -35,8 +35,8 @@ class Notifier {
   bool diff(String what, String oldValue, String newValue) {
     context(what, () {
       if (oldValue != newValue) {
-        out('\x1B[31m- $oldValue\x1B[0m');
-        out('\x1B[32m+ $newValue\x1B[0m');
+        oldValue.split('\n').map((e) => '\x1B[31m- $e\x1B[0m').forEach(out);
+        newValue.split('\n').map((e) => '\x1B[32m- $e\x1B[0m').forEach(out);
       }
     });
     return oldValue != newValue;
@@ -77,7 +77,7 @@ class _Context {
     } else {
       _printOffseted('$name:');
       for (final m in issues) {
-        _printOffseted('  $m');
+        m.split('\n').map((line) => '  $line').forEach(_printOffseted);
       }
       for (final c in contexts) {
         c._print();
