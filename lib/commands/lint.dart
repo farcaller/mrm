@@ -147,12 +147,14 @@ int skipWord(String text, int from, int count, {bool forward = true}) {
 
 Future<bool> lintDescription(Notifier n, String text) async {
   final cookie = Platform.environment['PWA_COOKIE'];
-  assert(cookie != null);
+  if (cookie == null) {
+    return true;
+  }
 
   final response = await http.post(
       Uri.parse('https://cloud.prowritingaid.com/analysis//api/async/text'),
       headers: {
-        'cookie': cookie!,
+        'cookie': cookie,
         'content-type': 'application/json',
       },
       body: jsonEncode({
