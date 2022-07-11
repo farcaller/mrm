@@ -17,6 +17,7 @@ class Lint extends Command with CommonFlags {
   final description = 'lint the shard';
 
   Lint() {
+    argParser.addOption('room', abbr: 'r');
     setupCommonArgs();
   }
 
@@ -29,6 +30,10 @@ class Lint extends Command with CommonFlags {
     int errors = 0;
 
     for (final room in shard.rooms) {
+      if (argResults?['room'] != null && argResults?['room'] != room.name) {
+        continue;
+      }
+
       await n.context('room "${room.name}"', () async {
         for (final roomRule in roomRules) {
           var ch = roomRule.check(room, n);
