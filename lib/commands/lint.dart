@@ -100,6 +100,16 @@ class Lint extends Command with CommonFlags {
       final firstLetter = exit.name![0];
       return firstLetter == firstLetter.toUpperCase();
     }),
+    ExitRule('the keyword must be no longer than 15 characters', Severity.error,
+        (exit) {
+      assert(exit.keywords!.isNotEmpty == true);
+      for (final kw in exit.keywords!) {
+        if (kw.length > 15) {
+          return false;
+        }
+      }
+      return true;
+    }),
     ExitRule('the "leave" message must end with a period', Severity.error,
         (exit) {
       return exit.messages?.leave.isNotEmpty == true &&
