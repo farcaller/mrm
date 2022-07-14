@@ -1,6 +1,7 @@
 import 'package:args/command_runner.dart';
 import 'package:glog/glog.dart';
 import 'package:mrm/commands/lint.dart';
+import 'package:mrm/commands/print.dart';
 import 'package:mrm/commands/sync_shard.dart';
 import 'package:mrm/commands/sync_room.dart';
 
@@ -11,5 +12,6 @@ void main(List<String> arguments) {
     ..addCommand(SyncRoom())
     ..addCommand(SyncShard())
     ..addCommand(Lint())
+    ..addCommand(Print())
     ..run(arguments);
 }
