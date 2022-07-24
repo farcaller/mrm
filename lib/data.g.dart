@@ -27,6 +27,7 @@ Shard _$ShardFromJson(Map<String, dynamic> json) => Shard(
           .map((e) => Room.fromJson(e as Map<String, dynamic>))
           .toList(),
       authInfo: AuthInfo.fromJson(json['authInfo'] as Map<String, dynamic>),
+      stripThes: json['stripThes'] as bool?,
       defaultExitMessages: json['defaultExitMessages'] == null
           ? null
           : ExitMessages.fromJson(
@@ -37,6 +38,7 @@ Map<String, dynamic> _$ShardToJson(Shard instance) => <String, dynamic>{
       'rooms': instance.rooms,
       'authInfo': instance.authInfo,
       'defaultExitMessages': instance.defaultExitMessages,
+      'stripThes': instance.stripThes,
     };
 
 Room _$RoomFromJson(Map<String, dynamic> json) => Room(

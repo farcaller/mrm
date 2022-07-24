@@ -34,9 +34,13 @@ class Shard {
   final List<Room> rooms;
   final AuthInfo authInfo;
   final ExitMessages? defaultExitMessages;
+  final bool? stripThes;
 
   Shard(
-      {required this.rooms, required this.authInfo, this.defaultExitMessages});
+      {required this.rooms,
+      required this.authInfo,
+      this.stripThes,
+      this.defaultExitMessages});
 
   factory Shard.fromJson(Map<String, dynamic> json) {
     var sh = _$ShardFromJson(json);
@@ -55,7 +59,10 @@ class Shard {
       ai = AuthInfo.fromJson(authJson);
     }
     return Shard(
-        rooms: rooms, defaultExitMessages: defaultExitMessages, authInfo: ai);
+        rooms: rooms,
+        defaultExitMessages: defaultExitMessages,
+        authInfo: ai,
+        stripThes: stripThes);
   }
 
   Shard _resolveExits() {
@@ -113,21 +120,8 @@ class Shard {
                 defaultExitMessages ??
                 ExitMessages(leave: '', arrive: '', travel: '');
 
-            final messages = ExitMessages(
-              leave: targetRoom != null
-                  ? roomMessages.leave
-                      .replaceAll('\$SHORT', targetRoom.exitName)
-                      .replaceAll('\$NAME', targetRoom.name)
-                  : roomMessages.leave,
-              arrive: roomMessages.arrive
-                  .replaceAll('\$SHORT', room.exitName)
-                  .replaceAll('\$NAME', room.name),
-              travel: targetRoom != null
-                  ? roomMessages.travel
-                      .replaceAll('\$SHORT', targetRoom.exitName)
-                      .replaceAll('\$NAME', targetRoom.name)
-                  : roomMessages.travel,
-            );
+            final messages = _resolveExitMessages(
+                room: room, targetRoom: targetRoom, roomMessages: roomMessages);
 
             return Exit(
               name: name,
@@ -147,7 +141,38 @@ class Shard {
               description: room.description,
               exits: exits);
         }).toList(),
-        authInfo: authInfo);
+        authInfo: authInfo,
+        stripThes: stripThes);
+  }
+
+  _resolveExitMessages(
+      {required Room room,
+      required Room? targetRoom,
+      required ExitMessages roomMessages}) {
+    sanitizeThe(String text) {
+      if (text.toLowerCase().startsWith('the ')) {
+        return text.substring(4);
+      }
+      return text;
+    }
+
+    final sanitizer = stripThes == true ? sanitizeThe : (String s) => s;
+
+    return ExitMessages(
+      leave: targetRoom != null
+          ? roomMessages.leave
+              .replaceAll('\$SHORT', sanitizer(targetRoom.exitName))
+              .replaceAll('\$NAME', sanitizer(targetRoom.name))
+          : roomMessages.leave,
+      arrive: roomMessages.arrive
+          .replaceAll('\$SHORT', sanitizer(room.exitName))
+          .replaceAll('\$NAME', sanitizer(room.name)),
+      travel: targetRoom != null
+          ? roomMessages.travel
+              .replaceAll('\$SHORT', sanitizer(targetRoom.exitName))
+              .replaceAll('\$NAME', sanitizer(targetRoom.name))
+          : roomMessages.travel,
+    );
   }
 }
 
