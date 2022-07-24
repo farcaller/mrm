@@ -75,7 +75,7 @@ class Lint extends Command with CommonFlags {
       final firstLetter = room.description[0];
       return firstLetter == firstLetter.toUpperCase();
     }),
-    RoomRule('the description must end with a period', Severity.error,
+    RoomRule('the description should end with a period', Severity.warning,
         (room, _) {
       assert(room.description.isNotEmpty);
       return room.description[room.description.length - 1] == '.';
