@@ -6,21 +6,24 @@ import '../data.dart';
 import '../notifier.dart';
 import 'common.dart';
 
-const logger = GlogContext('sync_room');
+const logger = GlogContext('sync');
 
-class SyncShard extends Command with CommonFlags {
+class Sync extends Command with CommonFlags {
   @override
-  final name = 'sync-shard';
+  final name = 'sync';
   @override
   final description = 'sync the whole shard';
 
-  SyncShard() {
+  Sync() {
+    argParser.addOption('room', abbr: 'r');
     argParser.addFlag('apply');
     setupCommonArgs();
   }
 
   @override
   void run() async {
+    final roomToSync = argResults?['room'];
+
     final shard = await loadShard(argShard);
     final n = Notifier();
     final agent = Agent(shard);
@@ -28,6 +31,7 @@ class SyncShard extends Command with CommonFlags {
 
     try {
       for (final room in shard.rooms) {
+        if (roomToSync != null && roomToSync != room.tid) continue;
         await agent.performSyncRoom(room.tid, n, argResults!['apply'] == true);
       }
     } catch (e, s) {
