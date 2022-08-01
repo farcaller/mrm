@@ -22,10 +22,10 @@ class Agent {
   ResModel? _ctrl;
   Completer? _finishMove;
 
-  Agent(this.shard) : client = ResClient(Uri.parse('wss://api.wolfery.com'));
+  Agent(this.shard) : client = ResClient();
 
   init() async {
-    client.reconnect();
+    client.reconnect(Uri.parse('wss://api.wolfery.com'));
 
     await client.events.firstWhere((e) => e is ConnectedEvent);
 
@@ -193,8 +193,9 @@ class Agent {
         }
       }
       for (final resExit in exitsToRemove) {
+        final details = await resExit.details;
         await n.context('exit "${resExit.name}"',
-            () => n.cross('remove exit to #${resExit.id}'));
+            () => n.cross('remove exit to #${details.targetRoom.id}'));
       }
       final exitsToAdd =
           targetRoom.exits.where((e) => !processedExits.contains(e)).toList();
