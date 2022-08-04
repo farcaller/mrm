@@ -16,4 +16,11 @@ class ResRoom {
   String get id => room['id'];
   // image
   String get name => room['name'];
+
+  List<ResExit> get hiddenExits =>
+      (room.client.get('core.room.$id.exits.hidden')!.item as ResModel)
+          .toJson()
+          .values
+          .map((e) => ResExit(e))
+          .toList();
 }

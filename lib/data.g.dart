@@ -76,14 +76,21 @@ Exit _$ExitFromJson(Map<String, dynamic> json) => Exit(
       messages: json['messages'] == null
           ? null
           : ExitMessages.fromJson(json['messages'] as Map<String, dynamic>),
-    );
+      targetRoomID: json['targetRoomID'] as String?,
+      exitOrder: json['exitOrder'] as int?,
+      hidden: json['hidden'] as bool? ?? false,
+    )..exitId = json['exitId'] as String?;
 
 Map<String, dynamic> _$ExitToJson(Exit instance) => <String, dynamic>{
       'name': instance.name,
       'to': instance.to,
       'back': instance.back,
       'messages': instance.messages,
+      'hidden': instance.hidden,
       'keywords': instance.keywords,
+      'targetRoomID': instance.targetRoomID,
+      'exitId': instance.exitId,
+      'exitOrder': instance.exitOrder,
     };
 
 ExitMessages _$ExitMessagesFromJson(Map<String, dynamic> json) => ExitMessages(

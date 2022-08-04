@@ -123,15 +123,18 @@ class Shard {
             final messages = _resolveExitMessages(
                 room: room, targetRoom: targetRoom, roomMessages: roomMessages);
 
+            final myIdx = idx;
+            if (!e.hidden) idx++;
+
             return Exit(
-              name: name,
-              keywords: keywords,
-              to: to,
-              back: back,
-              messages: messages,
-              targetRoomID: targetId,
-              exitOrder: idx++,
-            );
+                name: name,
+                keywords: keywords,
+                to: to,
+                back: back,
+                messages: messages,
+                targetRoomID: targetId,
+                exitOrder: myIdx,
+                hidden: e.hidden);
           }).toList();
           return Room(
               id: room.id,
@@ -213,15 +216,16 @@ class Exit {
   final String? to;
   final String? back;
   final ExitMessages? messages;
+  final bool hidden;
 
   @JsonKey(readValue: parseMaybeList)
   final List<String>? keywords;
 
-  @JsonKey(ignore: true)
+  // @JsonKey(ignore: true)
   final String? targetRoomID;
-  @JsonKey(ignore: true)
+  // @JsonKey(ignore: true)
   String? exitId;
-  @JsonKey(ignore: true)
+  // @JsonKey(ignore: true)
   final int? exitOrder;
 
   Exit(
@@ -231,7 +235,8 @@ class Exit {
       required this.keywords,
       required this.messages,
       this.targetRoomID,
-      this.exitOrder});
+      this.exitOrder,
+      this.hidden = false});
 
   factory Exit.fromJson(Map<String, dynamic> json) => _$ExitFromJson(json);
 

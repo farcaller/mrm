@@ -15,6 +15,19 @@ import 'res/room.dart';
 
 const logger = GlogContext('agent');
 
+class _ExitsSyncResult {
+  final List<ResExit> exitsToRemove;
+  final List<Exit> exitsToSet;
+  final List<Exit> exitsToAdd;
+
+  _ExitsSyncResult(this.exitsToRemove, this.exitsToSet, this.exitsToAdd);
+
+  bool get dirty =>
+      exitsToRemove.isNotEmpty ||
+      exitsToSet.isNotEmpty ||
+      exitsToAdd.isNotEmpty;
+}
+
 class Agent {
   final Shard shard;
   final ResClient client;
@@ -57,6 +70,7 @@ class Agent {
   ResModel get ctrl => _ctrl!;
 
   _teleport(String roomId) async {
+    await client.subscribe('core.room.$roomId', 'exits.hidden');
     if (ctrl['inRoom']['id'] == roomId) {
       logger.debug('already in #$roomId, skipping teleport');
       return;
@@ -111,6 +125,7 @@ class Agent {
       'leaveMsg': exit.messages!.leave,
       'name': exit.name,
       'travelMsg': exit.messages!.travel,
+      'hidden': exit.hidden,
     });
   }
 
@@ -138,6 +153,77 @@ class Agent {
 
   ResRoom get room => ResRoom(ctrl['inRoom']);
 
+  Future<_ExitsSyncResult> _syncExits(Notifier n, Room targetRoom,
+      ResRoom resRoom, List<Exit> matchedExits, bool hidden) async {
+    final exitsToRemove = <ResExit>[];
+    final exitsToSet = <Exit>[];
+    final processedExits = <Exit>[];
+
+    final resExits = hidden
+        ? resRoom.hiddenExits.asMap().entries
+        : resRoom.exits.asMap().entries;
+
+    // logger.warning(
+    //     'sync ${matchedExits.map((e) => e.toJson())} against ${resExits.map((e) => e.value.exit.toJson())}');
+
+    for (final resExitEntries in resExits) {
+      final resExit = resExitEntries.value;
+      final resExitIndex = resExitEntries.key;
+
+      final details = await resExit.details;
+      final exitIdx = matchedExits
+          .indexWhere((e) => e.targetRoomID == details.targetRoom.id);
+      if (exitIdx == -1) {
+        exitsToRemove.add(resExit);
+      } else {
+        final exit = matchedExits.removeAt(exitIdx);
+        exit.exitId = resExit.exit.rid.split('.').last;
+        processedExits.add(exit);
+        bool dirty = false;
+        await n.context('${hidden ? 'hidden ' : ''}exit "${exit.name}"', () {
+          dirty = n.diff('name', resExit.name, exit.name!) || dirty;
+          if (!hidden) {
+            dirty = n.diff('position', resExitIndex.toString(),
+                    exit.exitOrder.toString()) ||
+                dirty;
+          }
+          dirty = n.diff('target', details.targetRoom.id, exit.targetRoomID!) ||
+              dirty;
+          dirty = n.diff('exits', resExit.keys.join(', '),
+                  exit.keywords!.join(', ')) ||
+              dirty;
+          dirty =
+              n.diff('leave message', details.leaveMsg, exit.messages!.leave) ||
+                  dirty;
+          dirty = n.diff(
+                  'arrive message', details.arriveMsg, exit.messages!.arrive) ||
+              dirty;
+          dirty = n.diff(
+                  'travel message', details.travelMsg, exit.messages!.travel) ||
+              dirty;
+        });
+        if (dirty) exitsToSet.add(exit);
+      }
+    }
+    for (final resExit in exitsToRemove) {
+      final details = await resExit.details;
+      await n.context(
+          '${hidden ? 'hidden ' : ''}exit "${resExit.name}"',
+          () => n.cross(
+              'remove ${hidden ? 'hidden ' : ''}exit to #${details.targetRoom.id}'));
+    }
+    final exitsToAdd = targetRoom.exits
+        .where((e) => e.hidden == hidden && !processedExits.contains(e))
+        .toList();
+    for (final exit in exitsToAdd) {
+      await n.context(
+          '${hidden ? 'hidden ' : ''}exit "${exit.name}"',
+          () => n.plus(
+              'add ${hidden ? 'hidden ' : ''}exit to #${exit.targetRoomID}'));
+    }
+    return _ExitsSyncResult(exitsToRemove, exitsToSet, exitsToAdd);
+  }
+
   performSyncRoom(String roomName, Notifier n, bool apply) async {
     final targetRoom = shard.rooms.firstWhere((r) => r.tid == roomName);
     await teleport(targetRoom);
@@ -150,59 +236,15 @@ class Agent {
       dirtyRoom = n.diff('name', resRoom.name, room.name) || dirtyRoom;
       dirtyRoom = n.diff('description', resRoom.desc, targetRoom.description) ||
           dirtyRoom;
-      final exitsToRemove = <ResExit>[];
-      final exitsToSet = <Exit>[];
-      final processedExits = <Exit>[];
-      final matchedExits = [...targetRoom.exits];
-      for (final resExitEntries in resRoom.exits.asMap().entries) {
-        final resExit = resExitEntries.value;
-        final resExitIndex = resExitEntries.key;
+      final regularExits =
+          targetRoom.exits.whereNot((exit) => exit.hidden).toList();
+      final hiddenExits =
+          targetRoom.exits.where((exit) => exit.hidden).toList();
 
-        final details = await resExit.details;
-        final exitIdx = matchedExits
-            .indexWhere((e) => e.targetRoomID == details.targetRoom.id);
-        if (exitIdx == -1) {
-          exitsToRemove.add(resExit);
-        } else {
-          final exit = matchedExits.removeAt(exitIdx);
-          exit.exitId = resExit.exit.rid.split('.').last;
-          processedExits.add(exit);
-          bool dirty = false;
-          await n.context('exit "${exit.name}"', () {
-            dirty = n.diff('name', resExit.name, exit.name!) || dirty;
-            dirty = n.diff('position', resExitIndex.toString(),
-                    exit.exitOrder.toString()) ||
-                dirty;
-            dirty =
-                n.diff('target', details.targetRoom.id, exit.targetRoomID!) ||
-                    dirty;
-            dirty = n.diff('exits', resExit.keys.join(', '),
-                    exit.keywords!.join(', ')) ||
-                dirty;
-            dirty = n.diff(
-                    'leave message', details.leaveMsg, exit.messages!.leave) ||
-                dirty;
-            dirty = n.diff('arrive message', details.arriveMsg,
-                    exit.messages!.arrive) ||
-                dirty;
-            dirty = n.diff('travel message', details.travelMsg,
-                    exit.messages!.travel) ||
-                dirty;
-          });
-          if (dirty) exitsToSet.add(exit);
-        }
-      }
-      for (final resExit in exitsToRemove) {
-        final details = await resExit.details;
-        await n.context('exit "${resExit.name}"',
-            () => n.cross('remove exit to #${details.targetRoom.id}'));
-      }
-      final exitsToAdd =
-          targetRoom.exits.where((e) => !processedExits.contains(e)).toList();
-      for (final exit in exitsToAdd) {
-        await n.context('exit "${exit.name}"',
-            () => n.plus('add exit to #${exit.targetRoomID}'));
-      }
+      final regularExitsSync =
+          await _syncExits(n, targetRoom, resRoom, regularExits, false);
+      final hiddenExitsSync =
+          await _syncExits(n, targetRoom, resRoom, hiddenExits, true);
 
       if (dirtyRoom) {
         if (apply) {
@@ -213,26 +255,26 @@ class Agent {
         }
       }
 
-      final dirtyExits = exitsToRemove.isNotEmpty ||
-          exitsToSet.isNotEmpty ||
-          exitsToAdd.isNotEmpty;
-      if (dirtyExits) {
+      if (regularExitsSync.dirty) {
         if (apply) {
           n.out('applying the changes for the exits');
-          for (final exit in exitsToRemove) {
+          for (final exit in regularExitsSync.exitsToRemove) {
             await deleteExit(targetRoom, exit.exit.rid.split('.').last);
           }
-          for (final exit in exitsToAdd) {
+          for (final exit in regularExitsSync.exitsToAdd) {
             final exitId = await createExit(targetRoom, exit);
             exit.exitId = exitId;
             await setExit(targetRoom, exit, exitId);
           }
-          for (final exit in exitsToSet) {
+          for (final exit in regularExitsSync.exitsToSet) {
             await setExit(targetRoom, exit, exit.exitId!);
           }
 
           // re-order after everything is settled
-          final finalExits = [...exitsToAdd, ...exitsToSet];
+          final finalExits = [
+            ...regularExitsSync.exitsToAdd,
+            ...regularExitsSync.exitsToSet
+          ];
           for (var i = 0; i < finalExits.length; i++) {
             final exit = finalExits.firstWhereOrNull((e) => e.exitOrder == i);
             if (exit == null) continue;
@@ -240,6 +282,24 @@ class Agent {
           }
         } else {
           n.out('the room has pending changes for the exits');
+        }
+      }
+      if (hiddenExitsSync.dirty) {
+        if (apply) {
+          n.out('applying the changes for the hidden exits');
+          for (final exit in hiddenExitsSync.exitsToRemove) {
+            await deleteExit(targetRoom, exit.exit.rid.split('.').last);
+          }
+          for (final exit in hiddenExitsSync.exitsToAdd) {
+            final exitId = await createExit(targetRoom, exit);
+            exit.exitId = exitId;
+            await setExit(targetRoom, exit, exitId);
+          }
+          for (final exit in hiddenExitsSync.exitsToSet) {
+            await setExit(targetRoom, exit, exit.exitId!);
+          }
+        } else {
+          n.out('the room has pending changes for the hidden exits');
         }
       }
     });
