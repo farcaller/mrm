@@ -30,7 +30,7 @@ class Lint extends Command with CommonFlags {
     int errors = 0;
 
     for (final room in shard.rooms) {
-      if (argResults?['room'] != null && argResults?['room'] != room.name) {
+      if (argResults?['room'] != null && argResults?['room'] != room.tid) {
         continue;
       }
 
