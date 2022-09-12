@@ -116,9 +116,14 @@ class Shard {
               }
             }
 
-            final roomMessages = e.messages ??
+            var roomMessages = e.messages ??
                 defaultExitMessages ??
                 ExitMessages(leave: '', arrive: '', travel: '');
+            roomMessages = ExitMessages(
+              leave: roomMessages.leave.trim(),
+              arrive: roomMessages.arrive.trim(),
+              travel: roomMessages.travel.trim(),
+            );
 
             final messages = _resolveExitMessages(
                 room: room, targetRoom: targetRoom, roomMessages: roomMessages);
