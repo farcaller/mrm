@@ -110,20 +110,25 @@ class Lint extends Command with CommonFlags {
       }
       return true;
     }),
-    ExitRule('the "leave" message must end with a period', Severity.error,
+    ExitRule(
+        'the "leave" message must end with one of `.`, `!`', Severity.error,
         (exit) {
       return exit.messages?.leave.isNotEmpty == true &&
-          exit.messages?.leave[exit.messages!.leave.length - 1] == '.';
+          '.!'.contains(exit.messages!.leave[exit.messages!.leave.length - 1]);
     }),
-    ExitRule('the "arrival" message must end with a period', Severity.error,
+    ExitRule(
+        'the "arrival" message must end with one of `.`, `!`', Severity.error,
         (exit) {
       return exit.messages?.arrive.isNotEmpty == true &&
-          exit.messages?.arrive[exit.messages!.arrive.length - 1] == '.';
+          '.!'.contains(
+              exit.messages!.arrive[exit.messages!.arrive.length - 1]);
     }),
-    ExitRule('the "travel" message must end with a period', Severity.error,
+    ExitRule(
+        'the "travel" message must end with one of `.`, `!`', Severity.error,
         (exit) {
       return exit.messages?.travel.isNotEmpty == true &&
-          exit.messages?.travel[exit.messages!.travel.length - 1] == '.';
+          '.!'.contains(
+              exit.messages!.travel[exit.messages!.travel.length - 1]);
     }),
   ];
 }
